@@ -1,8 +1,10 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { CreateUserDto } from './dto/createUser.dto';
+import { UsersService } from './users.service';
 
 @Controller('customers')
 export class UsersController {
+    constructor(private usersService: UsersService) {}
 
     @Get()
     getAllUsers() {
@@ -11,7 +13,7 @@ export class UsersController {
 
     @Post()
     registerUserWithEmail(@Body() createUserDto: CreateUserDto) {
-        
+        this.usersService.createUser(createUserDto);    
     }
 
     @Post()
