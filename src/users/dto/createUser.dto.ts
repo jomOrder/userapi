@@ -1,6 +1,13 @@
 import { IsIn, IsNotEmpty, IsOptional } from 'class-validator';
 import { UserVerify } from '../users.service';
 export class CreateUserDto {
+
+    @IsNotEmpty()
+    name: {
+        first: string,
+        last: string
+    };
+
     @IsNotEmpty()
     email: string;
 
@@ -12,6 +19,7 @@ export class CreateUserDto {
     @IsNotEmpty()
     phoneNumber: string
 
+    @IsOptional()
     @IsIn([UserVerify.YES, UserVerify.NO])
     isVerified: string;
 

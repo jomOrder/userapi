@@ -3,12 +3,14 @@ import { UsersModule } from './users/users.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { typeOrmConfig } from './config/typeorm.config';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
-    // TypeOrmModule.forRoot(typeOrmConfig),
+    MongooseModule.forRoot('mongodb+srv://omar:123456Omar@stagingrep.sbvh8.mongodb.net/jom?retryWrites=true&w=majority'),
     UsersModule,
     TransactionsModule
   ],
+  providers: [],
 })
 export class AppModule { }

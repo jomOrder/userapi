@@ -1,12 +1,12 @@
 import * as Mailgun from 'mailgun-js'
 
-const DOMAIN = 'YOUR_DOMAIN_NAME';
+const DOMAIN = 'mg.jomorder.com.my';
 const mg = new Mailgun({ apiKey: 'ce97334a16f8c6f459246799e54e88a5-915161b7-e8fab4ab', domain: DOMAIN })
 
 
 const sendUserWelcomeMessage = (email): void => {
     const data = {
-        from: 'JomOrder <no-replay@jomorder.com.my>',
+        from: 'JomOrder <no-reply@jomorder.com.my>',
         to: email,
         subject: 'Welcome To JomOrder',
         template: 'template.welcome',
@@ -25,7 +25,7 @@ const sendUserEmailVerification = (): void => {
 
 const sendTransactionEmail = (email, transaction): void => {
     const data = {
-        from: 'JomOrder <no-replay@jomorder.com.my>',
+        from: 'JomOrder <no-reply@jomorder.com.my>',
         to: email,
         subject: 'Your JomOrder E-Receipt',
         template: 'template.transaction',

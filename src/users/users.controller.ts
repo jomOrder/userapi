@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, Res, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Response } from 'express';
 import { CreateUserDto } from './dto/createUser.dto';
 import { GetUserFliter } from './dto/getUserFilter.dto';
 import { UserValidationPiples } from './pipes/UserValidationPiples.pipes';
@@ -9,22 +10,31 @@ export class UsersController {
     constructor(private usersService: UsersService) { }
 
     @Get()
-    getUsers(@Query() userFilter: GetUserFliter) {
-        if(Object.keys(userFilter).length) return this.usersService.getAllUsers();
+    async getUsers(@Query() userFilter: GetUserFliter, @Req() request, @Res() response) {
+
+        // if(Object.keys(userFilter).length) 
+        const users = await this.usersService.getAllUsers();
+
+        return response.status(200).send({ users });
     }
+
 
     @Get('/:id')
     getUserById(@Param('id') id: string) {
         return this.usersService.getUserByID(id);
     }
 
-    @Post('/email')
+    @Post('/auth/signup/email')
     @UsePipes(ValidationPipe)
-    registerUserWithEmail(@Body() createUserDto: CreateUserDto) {
-        this.usersService.createUser(createUserDto);
+    async registerUserWithEmail(@Body() createUserDto: CreateUserDto, @Req() req, @Res() res: Response) {
+        const statusCode = await this.usersService.createUserWithEmail(createUserDto);
+
+        if (statusCode == 302) return res.status(statusCode).send({ message: 'User Exist Already. need to register' });
+
+        return res.status(statusCode).send({ message: 'User has created' });
     }
 
-    @Post('/phone')
+    @Post('/auth/phone')
     registerUserWithPhone() {
 
     }
@@ -34,12 +44,12 @@ export class UsersController {
 
     }
 
-    @Post('/apple')
+    @Post('/auth/apple')
     registerUserWithApple() {
 
     }
 
-    @Post('/facebook')
+    @Post('/auth/facebook')
     registerUserWithFacebook() {
 
     }
