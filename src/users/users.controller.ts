@@ -1,5 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, Res, UsePipes, ValidationPipe } from '@nestjs/common';
-import { Response } from 'express';
+import { Body, Controller, Delete, UseGuards, Get, Param, Patch, Post, Query, Req, Res, UsePipes, ValidationPipe, HttpStatus } from '@nestjs/common';
+import { Response, Request } from 'express';
+import { AuthGuard } from "@nestjs/passport";
+
 import { CreateUserDto } from './dto/createUser.dto';
 import { GetUserFliter } from './dto/getUserFilter.dto';
 import { UserValidationPiples } from './pipes/UserValidationPiples.pipes';
@@ -14,8 +16,7 @@ export class UsersController {
 
         // if(Object.keys(userFilter).length) 
         const users = await this.usersService.getAllUsers();
-
-        return response.status(200).send({ users });
+        return response.status(200).send(users);
     }
 
 
@@ -39,19 +40,47 @@ export class UsersController {
 
     }
 
-    @Post('/gmail/outh2')
-    registerUserWithGoogle() {
-
+    @Get('/auth/google')
+    @UseGuards(AuthGuard("google"))
+    async googleLogin(): Promise<any> {
+        return HttpStatus.OK;
     }
 
-    @Post('/auth/apple')
-    registerUserWithApple() {
-
+    @Get("/auth/google/redirect")
+    @UseGuards(AuthGuard("google"))
+    async googleLoginRedirect(@Req() req: Request): Promise<any> {
+        return this.usersService.loginWithGoogle(req);
     }
 
-    @Post('/auth/facebook')
-    registerUserWithFacebook() {
 
+    @Get('/auth/apple')
+    @UseGuards(AuthGuard("apple"))
+    async appleLogin(): Promise<any> {
+        return HttpStatus.OK;
+    }
+
+    @Get("/auth/apple/redirect")
+    @UseGuards(AuthGuard("apple"))
+    async appleLoginRedirect(@Req() req: Request): Promise<any> {
+        return {
+            statusCode: HttpStatus.OK,
+            data: req.user,
+        };
+    }
+
+    @Get("/auth/facebook")
+    @UseGuards(AuthGuard("facebook"))
+    async facebookLogin(): Promise<any> {
+        return HttpStatus.OK;
+    }
+
+    @Get("/auth/facebook/redirect")
+    @UseGuards(AuthGuard("facebook"))
+    async facebookLoginRedirect(@Req() req: Request): Promise<any> {
+        return {
+            statusCode: HttpStatus.OK,
+            data: req.user,
+        };
     }
 
     @Post('/verify/code')

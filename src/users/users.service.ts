@@ -24,14 +24,15 @@ export enum UserVerify {
 export class UsersService {
     constructor(@InjectModel("user") private userModel: Model<UserDocument>) { }
 
-    async getAllUsers() {
+    getAllUsers() {
         const userRepository = this.userModel;
 
         try {
 
-            const users = await userRepository.find();
+            return this.userModel.find().sort({
+                createDate: -1
+            }).select(["email", "name"])
 
-            return users;
 
         } catch (e) {
             winston.error(e.message);
@@ -112,6 +113,16 @@ export class UsersService {
             winston.error(e.message);
         }
 
+    }
+
+    loginWithGoogle(req): any {
+        if (!req.user) return 'No user from Google';
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: 'User Information From Google',
+            user: req.user
+        }
     }
 
     async signInWithPhoneNumber() {
