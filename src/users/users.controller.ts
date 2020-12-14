@@ -6,7 +6,6 @@ import { CreateUserDto } from './dto/createUser.dto';
 import { GetUserFliter } from './dto/getUserFilter.dto';
 import { UserValidationPiples } from './pipes/UserValidationPiples.pipes';
 import { UsersService } from './users.service';
-
 @Controller('users')
 export class UsersController {
     constructor(private usersService: UsersService) { }
@@ -19,7 +18,6 @@ export class UsersController {
         return response.status(200).send(users);
     }
 
-
     @Get('/:id')
     getUserById(@Param('id') id: string) {
         return this.usersService.getUserByID(id);
@@ -27,12 +25,8 @@ export class UsersController {
 
     @Post('/auth/signup/email')
     @UsePipes(ValidationPipe)
-    async registerUserWithEmail(@Body() createUserDto: CreateUserDto, @Req() req, @Res() res: Response) {
-        const statusCode = await this.usersService.createUserWithEmail(createUserDto);
-
-        if (statusCode == 302) return res.status(statusCode).send({ message: 'User Exist Already. need to register' });
-
-        return res.status(statusCode).send({ message: 'User has created' });
+    registerUserWithEmail(@Body() createUserDto: CreateUserDto, @Req() req, @Res() res: Response) {
+        return this.usersService.createUserWithEmail(createUserDto, res);
     }
 
     @Post('/auth/phone')
@@ -77,10 +71,7 @@ export class UsersController {
     @Get("/auth/facebook/redirect")
     @UseGuards(AuthGuard("facebook"))
     async facebookLoginRedirect(@Req() req: Request): Promise<any> {
-        return {
-            statusCode: HttpStatus.OK,
-            data: req.user,
-        };
+        return this.usersService.loginWithFacebook(req);
     }
 
     @Post('/verify/code')

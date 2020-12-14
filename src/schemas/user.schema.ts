@@ -34,6 +34,9 @@ export class User {
     isVerified: UserVerify
 
     @Prop({ nullable: true })
+    accessToken: string;
+
+    @Prop({ nullable: true })
     verifiedDate: Date;
 
     @Prop({ default: Date.now() })
@@ -44,8 +47,6 @@ export class User {
 
     @Prop({ nullable: true })
     deleteDate?: Date
-
-
 }
 
 

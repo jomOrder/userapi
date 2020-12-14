@@ -1,6 +1,1 @@
-const jwtSecret = "@MDC1LFOM";
-
-
-export default (
-    jwtSecret
-)
+export const jwtSecret = "@MDC1LFOM";
