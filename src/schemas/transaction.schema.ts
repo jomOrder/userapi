@@ -5,6 +5,7 @@ import { UserSchema } from './user.schema';
 
 export enum TransactionStatus {
   ACCEPTED = 'ACCEPTED',
+  IN_PROGRESS = 'IN_PROGRESS',
   CANCELLED = 'CANCELLED'
 }
 
@@ -12,7 +13,10 @@ export enum TransactionPaymentMethod {
   CASH = 'CASH',
   ONLINE_BANKING = 'ONLINE_BANKING',
   CREDIT_CARD = 'CREDIT_CARD',
-  DEBIT_CARD = 'DEBIT_CARD'
+  DEBIT_CARD = 'DEBIT_CARD',
+  GRAB_PAY = 'GRAB_PAY',
+  TNG = 'TNG',
+  BOOST = 'BOOST'
 }
 
 export type TransactionDocument = Transaction & Document;
@@ -70,9 +74,6 @@ export class Transaction {
       }
     ]
   }];
-
-
-
 }
 
 mongoose.model('User', UserSchema);

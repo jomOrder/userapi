@@ -3,7 +3,7 @@ import { CreateUserDto } from './dto/createUser.dto';
 import { UserDocument } from 'src/schemas/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import config from '../config/config';
+import { jwtSecret } from '../config/config';
 import * as winston from 'winston';
 import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
@@ -12,7 +12,6 @@ export interface User {
     password: string;
     phoneNumber: string;
     isVerified: UserVerify
-
 }
 
 export enum UserVerify {
@@ -29,7 +28,7 @@ export class UsersService {
 
         try {
 
-            return this.userModel.find().sort({
+            return userRepository.find().sort({
                 createDate: -1
             }).select(["email", "name"])
 
@@ -51,27 +50,38 @@ export class UsersService {
         }
     }
 
-    async createUserWithEmail(createUserDto: CreateUserDto): Promise<number> {
+    async createUserWithEmail(createUserDto: CreateUserDto, res): Promise<any> {
         const { email, password, name } = createUserDto;
         const userRepository = this.userModel;
 
-
         try {
 
-            const findUser = await userRepository.findOne({ email });
-
-            if (findUser) return HttpStatus.FOUND;
+            const findUser = await userRepository.findOne({ email }).select({ email: 1 })
+            if (findUser) return res.send({
+                statusCode: HttpStatus.FOUND,
+                message: 'User Exist Already. need to register'
+            });
 
             const salt = await bcrypt.genSalt(10);
             const hashed = await bcrypt.hash(password, salt);
 
-            const user = new this.userModel()
-            user.name = name;
-            user.password = hashed;
-            user.email = email;
-            await user.save()
+            const user = new this.userModel({
+                name,
+                password: hashed,
+                email
+            });
+            user.save()
+            const payload = { userID: user._id };
+            const token = jwt.sign(payload, jwtSecret, {
+                expiresIn: '1h',
+                algorithm: 'HS384'
+            });
 
-            return HttpStatus.CREATED;
+            return res.send({
+                statusCode: HttpStatus.CREATED,
+                token,
+                meessage: 'User has created',
+            });
 
         } catch (e) {
             winston.error(e.message)
@@ -79,17 +89,14 @@ export class UsersService {
 
     }
 
-    async loginUserWithEmail(createUserDto: CreateUserDto): Promise<void> {
+    async loginUserWithEmail(createUserDto: CreateUserDto): Promise<any> {
         const { email, password: attemptedPassword } = createUserDto;
         const userRepository = await this.userModel;
 
         try {
 
-            const user = await userRepository.findOne({ email });
-            if (!user) throw new HttpException({
-                status: HttpStatus.NOT_FOUND,
-                error: 'User Not Exist. you need to register',
-            }, HttpStatus.NOT_FOUND);
+            const user = await userRepository.findOne({ email }).select({ email: 1 })
+            if (!user) return HttpStatus.NOT_FOUND;
 
             const validPassword = await bcrypt.compare(attemptedPassword, user.password);
             if (!validPassword) throw new HttpException({
@@ -98,16 +105,15 @@ export class UsersService {
             }, HttpStatus.BAD_REQUEST);
 
             const payload = { userID: user._id };
-            //@ts-ignore
-            const token = jwt.sign(payload, config.jwtSecret, {
+            const token = jwt.sign(payload, jwtSecret, {
                 expiresIn: '1h',
                 algorithm: 'HS384'
             });
 
-            throw new HttpException({
+            return {
                 status: HttpStatus.CREATED,
-                token,
-            }, HttpStatus.CREATED);
+                token
+            }
 
         } catch (e) {
             winston.error(e.message);
@@ -115,14 +121,99 @@ export class UsersService {
 
     }
 
-    loginWithGoogle(req): any {
-        if (!req.user) return 'No user from Google';
+    async loginWithFacebook(req): Promise<any> {
+        const { firstName, lastName, email, photo } = req.user.data;
+        let payload = null;
+        let token = null;
+        try {
 
-        return {
-            statusCode: HttpStatus.OK,
-            message: 'User Information From Google',
-            user: req.user
+            const findUser = await this.userModel.findOne({ email }).select({ email: 1 });
+
+
+            if (findUser) {
+                payload = { userID: findUser._id };
+
+                token = jwt.sign(payload, jwtSecret, {
+                    expiresIn: '1h',
+                    algorithm: 'HS384'
+                });
+                return { message: 'User Sigin Successfully.', token, statusCode: HttpStatus.OK }
+            }
+            const user = new this.userModel({
+                name: {
+                    first: firstName,
+                    last: lastName
+                },
+                email,
+                photo: {
+                    url: photo
+                },
+                isVerified: 'YES',
+                accessToken: req.user.accessToken,
+                verifiedDate: new Date()
+            });
+
+            await user.save();
+
+            if (user) payload = { userID: user._id };
+            token = jwt.sign(payload, jwtSecret, {
+                expiresIn: '1h',
+                algorithm: 'HS384'
+            });
+
+            return { message: 'User Created.', token, statusCode: HttpStatus.CREATED }
+
+        } catch (e) {
+            winston.error(e.message);
         }
+    }
+
+    async loginWithGoogle(req): Promise<any> {
+        const { email, firstName, lastName, picture } = req.user;
+        let payload = null;
+        let token = null;
+
+        try {
+
+            const findUser = await this.userModel.findOne({ email }).select({ email: 1, accessToken: 1 })
+            if (findUser) {
+                if (findUser.accessToken) return { message: 'User exist with facebook account. please try to signin with facebook', statusCode: HttpStatus.OK }
+                payload = { userID: findUser._id };
+
+                token = jwt.sign(payload, jwtSecret, {
+                    expiresIn: '1h',
+                    algorithm: 'HS384'
+                });
+                return { message: 'User Sigin Successfully.', token, statusCode: HttpStatus.OK }
+            }
+
+            const user = new this.userModel({
+                name: {
+                    first: firstName,
+                    last: lastName
+                },
+                email,
+                photo: {
+                    url: picture
+                },
+                isVerified: 'YES',
+                verifiedDate: new Date()
+            });
+
+            await user.save();
+
+            if (user) payload = { userID: user._id };
+            token = jwt.sign(payload, jwtSecret, {
+                expiresIn: '1h',
+                algorithm: 'HS384'
+            });
+
+            return { message: 'User Created.', token, statusCode: HttpStatus.CREATED }
+
+        } catch (e) {
+            winston.error(e);
+        }
+
     }
 
     async signInWithPhoneNumber() {
