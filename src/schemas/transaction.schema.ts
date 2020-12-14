@@ -20,7 +20,7 @@ export type TransactionDocument = Transaction & Document;
 @Schema({ versionKey: false })
 export class Transaction {
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', indexes: true })
   userID: mongoose.Types.ObjectId;
 
   @Prop({ required: true })
