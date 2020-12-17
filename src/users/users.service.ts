@@ -7,6 +7,17 @@ import { jwtSecret } from '../config/config';
 import * as winston from 'winston';
 import * as bcrypt from "bcryptjs";
 import * as jwt from "jsonwebtoken";
+import * as Validator from 'email-validator'
+import * as EmailValidator from 'email-deep-validator';
+import * as redis from 'redis';
+import { FB, FacebookApiException } from 'fb';
+import { VerifyUserPhoneDto } from './dto/verifyUserPhoneDto.dto';
+import { promisify } from 'util';
+
+const client = redis.createClient({ port: 6379, host: "127.0.0.1" });
+const getAsync = promisify(client.get).bind(client);
+const emailValidator = new EmailValidator();
+
 export interface User {
     email: string;
     password: string;
@@ -29,7 +40,7 @@ export class UsersService {
         try {
 
             return userRepository.find().sort({
-                createDate: -1
+                verifiedDate: 1
             }).select(["email", "name"])
 
 
@@ -52,14 +63,19 @@ export class UsersService {
 
     async createUserWithEmail(createUserDto: CreateUserDto, res): Promise<any> {
         const { email, password, name } = createUserDto;
-        const userRepository = this.userModel;
-
         try {
 
-            const findUser = await userRepository.findOne({ email }).select({ email: 1 })
-            if (findUser) return res.send({
-                statusCode: HttpStatus.FOUND,
-                message: 'User Exist Already. need to register'
+            const isEmailVaild = Validator.validate(email);
+            if (!isEmailVaild) return res.send({
+                code: 20,
+                message: 'User Email Not Valid.'
+            });
+
+            let findUser = await this.userModel.findOne({ email }).exec();
+
+            if (findUser) return res.status(HttpStatus.FOUND).send({
+                code: 11,
+                message: 'User Exist Already. Need to Sign In'
             });
 
             const salt = await bcrypt.genSalt(10);
@@ -77,8 +93,8 @@ export class UsersService {
                 algorithm: 'HS384'
             });
 
-            return res.send({
-                statusCode: HttpStatus.CREATED,
+            return res.status(HttpStatus.CREATED).send({
+                code: 9,
                 token,
                 meessage: 'User has created',
             });
@@ -89,19 +105,18 @@ export class UsersService {
 
     }
 
-    async loginUserWithEmail(createUserDto: CreateUserDto): Promise<any> {
+    async loginUserWithEmail(createUserDto: CreateUserDto, res): Promise<any> {
         const { email, password: attemptedPassword } = createUserDto;
-        const userRepository = await this.userModel;
 
         try {
 
-            const user = await userRepository.findOne({ email }).select({ email: 1 })
+            const user = await this.userModel.findOne({ email }).select(["email", "isVerified"])
             if (!user) return HttpStatus.NOT_FOUND;
 
             const validPassword = await bcrypt.compare(attemptedPassword, user.password);
             if (!validPassword) throw new HttpException({
                 status: HttpStatus.BAD_REQUEST,
-                message: 'password does not match',
+                message: 'Password Does Not Match',
             }, HttpStatus.BAD_REQUEST);
 
             const payload = { userID: user._id };
@@ -153,7 +168,7 @@ export class UsersService {
                 verifiedDate: new Date()
             });
 
-            await user.save();
+            user.save();
 
             if (user) payload = { userID: user._id };
             token = jwt.sign(payload, jwtSecret, {
@@ -185,6 +200,7 @@ export class UsersService {
                     algorithm: 'HS384'
                 });
                 return { message: 'User Sigin Successfully.', token, statusCode: HttpStatus.OK }
+
             }
 
             const user = new this.userModel({
@@ -200,13 +216,14 @@ export class UsersService {
                 verifiedDate: new Date()
             });
 
-            await user.save();
+            user.save();
 
             if (user) payload = { userID: user._id };
             token = jwt.sign(payload, jwtSecret, {
                 expiresIn: '1h',
                 algorithm: 'HS384'
             });
+
 
             return { message: 'User Created.', token, statusCode: HttpStatus.CREATED }
 
@@ -216,12 +233,71 @@ export class UsersService {
 
     }
 
-    async signInWithPhoneNumber() {
+    async signInWithPhoneNumber(verifyUserPhoneDto: VerifyUserPhoneDto, res): Promise<any> {
+        const { phoneNumber } = verifyUserPhoneDto;
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
         try {
+
+            const findUser = await this.userModel.findOne({ phoneNumber })
+            if (findUser && findUser.isVerified)
+                return {
+                    code: 20,
+                    message: 'User Registered and Verified'
+                }
+
+            const user = new this.userModel({
+                phoneNumber
+            });
+
+            user.save();
+            // send SMS OTP Code;
+
+            client.set(phoneNumber, code);
+            client.expire(phoneNumber, 180);
+            return res.status(HttpStatus.CREATED).send({
+                code: 9,
+                otpCode: code,
+                message: 'User Created.'
+            });
+            // End Send SMS OTP Code;
 
         } catch (e) {
             winston.error(e.meesage);
         }
+    }
+
+    async verifyOTPCode(verifyUserPhone: VerifyUserPhoneDto, res): Promise<any> {
+        const { phoneNumber, code } = verifyUserPhone;
+        const userRepository = await this.userModel;
+
+        try {
+
+            const result = await getAsync(phoneNumber);
+
+            if (!result) return res.status(HttpStatus.OK).send({
+                code: 19,
+                message: 'Code Expired. Please Request again'
+            });
+            if (result != code) return res.status(HttpStatus.BAD_REQUEST).send({ code: 20, message: 'Code is not valid' });
+            const user = userRepository.findOne({ phoneNumber })
+            if (!user)
+                return {
+                    code: 19,
+                    message: 'User Not Found'
+                }
+
+            user.update({ isVerified: UserVerify.YES, verifiedDate: new Date() }).exec();
+
+            return res.status(HttpStatus.CREATED).send({ code: 10, message: 'User has verified successfully' });
+
+        } catch (e) {
+            throw new HttpException({
+                status: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: e.message,
+            }, HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+
+
     }
 
 
@@ -240,3 +316,11 @@ export class UsersService {
         }
     }
 }
+
+/**
+ * ---------------
+ * Message Code
+ * ---------------
+ * 5
+ * 
+ */
