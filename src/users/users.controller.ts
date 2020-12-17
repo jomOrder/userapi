@@ -1,18 +1,19 @@
-import { Body, Controller, Delete, UseGuards, Get, Param, Patch, Post, Query, Req, Res, UsePipes, ValidationPipe, HttpStatus } from '@nestjs/common';
-import { Response, Request } from 'express';
+import { Body, Controller, Delete, UseGuards, Redirect, Get, Param, Patch, Post, Query, Req, Res, UsePipes, ValidationPipe, HttpStatus } from '@nestjs/common';
+import { Request, Response } from 'express';
 import { AuthGuard } from "@nestjs/passport";
 
 import { CreateUserDto } from './dto/createUser.dto';
-import { GetUserFliter } from './dto/getUserFilter.dto';
+import { GetUserFliterDto } from './dto/getUserFilter.dto';
 import { UserValidationPiples } from './pipes/UserValidationPiples.pipes';
 import { UsersService } from './users.service';
-@Controller('users')
+import { VerifyUserPhoneDto } from './dto/verifyUserPhoneDto.dto';
+@Controller('api/users')
 export class UsersController {
     constructor(private usersService: UsersService) { }
 
     @Get()
-    async getUsers(@Query() userFilter: GetUserFliter, @Req() request, @Res() response) {
-
+    async getUsers(@Query() userFilter: GetUserFliterDto, @Req() request, @Res() response) {
+      
         // if(Object.keys(userFilter).length) 
         const users = await this.usersService.getAllUsers();
         return response.status(200).send(users);
@@ -29,11 +30,6 @@ export class UsersController {
         return this.usersService.createUserWithEmail(createUserDto, res);
     }
 
-    @Post('/auth/phone')
-    registerUserWithPhone() {
-
-    }
-
     @Get('/auth/google')
     @UseGuards(AuthGuard("google"))
     async googleLogin(): Promise<any> {
@@ -42,8 +38,12 @@ export class UsersController {
 
     @Get("/auth/google/redirect")
     @UseGuards(AuthGuard("google"))
-    async googleLoginRedirect(@Req() req: Request): Promise<any> {
-        return this.usersService.loginWithGoogle(req);
+    // @Redirect('https://nestjs.com', 302)
+    async googleLoginRedirect(@Req() req: Request, @Res() res): Promise<any> {
+        // return this.usersService.loginWithGoogle(req);
+        //@ts-ignore
+        return res.redirect("http://localhost:19006/?access=fsgrsgdfsgdfg");
+
     }
 
 
@@ -73,10 +73,15 @@ export class UsersController {
     async facebookLoginRedirect(@Req() req: Request): Promise<any> {
         return this.usersService.loginWithFacebook(req);
     }
+    
+    @Post('/auth/phone')
+    phoneNumberLogin(@Body() verifyUserPhone: VerifyUserPhoneDto, @Res() res: Response) {
+        return this.usersService.signInWithPhoneNumber(verifyUserPhone, res);
+    }
 
-    @Post('/verify/code')
-    verifyUserPhone() {
-
+    @Post('/auth/verify/code')
+    verifyUserPhone(@Body() verifyUserPhone: VerifyUserPhoneDto, @Res() res: Response) {
+        return this.usersService.verifyOTPCode(verifyUserPhone, res);
     }
 
     @Delete('/:id')

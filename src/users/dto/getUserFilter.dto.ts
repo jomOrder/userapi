@@ -1,3 +1,3 @@
-export class GetUserFliter {
+export class GetUserFliterDto {
     isVerified: string
 }
