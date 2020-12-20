@@ -3,6 +3,7 @@ import { UserVerify } from '../users.service';
 export class CreateUserDto {
 
     @IsNotEmpty()
+    @IsOptional()
     name: {
         first: string,
         last: string

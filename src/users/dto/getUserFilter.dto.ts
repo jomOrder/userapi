@@ -1,3 +1,5 @@
+import { ObjectId } from "mongodb";
+
 export class GetUserFliterDto {
-    isVerified: string
+    userID: ObjectId
 }
