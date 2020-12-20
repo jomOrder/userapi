@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import * as bcrypt from "bcryptjs";
 
 export type UserDocument = User & Document;
 
@@ -47,6 +48,12 @@ export class User {
 
     @Prop({ nullable: true })
     deleteDate?: Date
+
+
+    async validatePassword(password: string): Promise<any> {
+        const isValidated = await bcrypt.compare(password, this.password);
+        return isValidated;
+    }
 }
 
 
