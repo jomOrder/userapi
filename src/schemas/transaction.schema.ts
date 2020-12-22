@@ -72,6 +72,11 @@ export class Transaction {
         name: string,
         price: string
       }
+    ],
+    specialRequests: [
+      {
+        name: string
+      }
     ]
   }];
 }
