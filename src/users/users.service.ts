@@ -14,8 +14,9 @@ import * as Queue from 'bee-queue';
 import { FB, FacebookApiException } from 'fb';
 import { VerifyUserPhoneDto } from './dto/verifyUserPhoneDto.dto';
 import { promisify } from 'util';
-import { Response, Request } from 'express';
-
+import { Response } from 'express';
+import { sendUserEmailVerification } from 'src/service/mailgun.service';
+import { EmailVerificationDto } from './dto/emailVerification.dto';
 const client = redis.createClient({ port: 6379, host: "127.0.0.1" });
 const getAsync = promisify(client.get).bind(client);
 const emailValidator = new EmailValidator();
@@ -88,7 +89,11 @@ export class UsersService {
                 expiresIn: '1h',
                 algorithm: 'HS384'
             });
+
             // Send an emailVerification
+            let auth_link = `${process.env.STAG_URI}/verify/email?authorization=${token}&email=${email}`
+
+            sendUserEmailVerification(email, auth_link)
 
             // end emailVerification
             return res.status(HttpStatus.CREATED).send({
@@ -105,18 +110,27 @@ export class UsersService {
 
     }
 
-    async emailVerification() {
+    async emailVerification(emailVerificationDto: EmailVerificationDto, res: Response) {
+        const { email, authorization } = emailVerificationDto;
         try {
 
+            
+            const user = await this.userModel.findOne({ email });
 
-            // const payload = { userID: user._id };
-            // const token = jwt.sign(payload, jwtSecret, {
-            //     expiresIn: '1h',
-            //     algorithm: 'HS384'
-            // });
+            if (user.isVerified) return res.status(HttpStatus.FORBIDDEN).send({ message: 'Expired' });
 
-            //Redirect to order.jomorder.com.my
+            await jwt.verify(authorization, jwtSecret);
 
+           
+            user.updateOne({ isVerified: UserVerify.YES, verifiedDate: new Date() }).exec();
+
+            const payload = { userID: user._id };
+            const accessToken = jwt.sign(payload, jwtSecret, {
+                expiresIn: '1h',
+                algorithm: 'HS384'
+            });
+
+            return res.setTimeout(400).redirect(301, `${process.env.STAG_APP_URL}/store?accessToken=${accessToken}`);
 
         } catch (e) {
             winston.error(e.message);
@@ -185,7 +199,7 @@ export class UsersService {
                     algorithm: 'HS384'
                 });
 
-                return res.redirect(`${process.env.STAG_DOMAIN}/store?accessToken=${token}`);
+                return res.redirect(301, `${process.env.STAG_APP_URL}/store?accessToken=${token}`);
             }
             const user = new this.userModel({
                 name: {
@@ -209,7 +223,7 @@ export class UsersService {
                 algorithm: 'HS384'
             });
 
-            return res.redirect(`${process.env.STAG_DOMAIN}/store?accessToken=${token}`);
+            return res.redirect(301, `${process.env.STAG_APP_URL}/store?accessToken=${token}`);
 
         } catch (e) {
             winston.error(e.message);
@@ -230,14 +244,14 @@ export class UsersService {
             const findUser = await this.userModel.findOne({ email }).select({ email: 1, accessToken: 1 })
             if (findUser) {
                 if (findUser.accessToken) return res.status(HttpStatus.BAD_REQUEST).send({ message: 'User exist with facebook account. please try to signin with facebook', code: 40 });
-                
+
                 payload = { userID: findUser._id };
                 token = jwt.sign(payload, jwtSecret, {
                     expiresIn: '1h',
                     algorithm: 'HS384'
                 });
 
-                return res.redirect(`${process.env.STAG_DOMAIN}/store?accessToken=${token}`);
+                return res.redirect(301, `${process.env.STAG_APP_URL}/store?accessToken=${token}`);
             }
 
             const user = new this.userModel({
@@ -261,7 +275,7 @@ export class UsersService {
                 algorithm: 'HS384'
             });
 
-            return res.redirect(`${process.env.STAG_DOMAIN}/store?accessToken=${token}`);
+            return res.redirect(301, `${process.env.STAG_APP_URL}/store?accessToken=${token}`);
 
         } catch (e) {
             winston.error(e);
@@ -347,7 +361,7 @@ export class UsersService {
                     message: 'User Not Found'
                 }
 
-            user.update({ isVerified: UserVerify.YES, verifiedDate: new Date() }).exec();
+            user.updateOne({ isVerified: UserVerify.YES, verifiedDate: new Date() }).exec();
 
             return res.status(HttpStatus.OK).send({ code: 29, message: 'User has verified successfully' });
 

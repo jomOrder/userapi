@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, UseGuards, Get, Param, Patch, Post, Req, Res, UsePipes, ValidationPipe, HttpStatus } from '@nestjs/common';
+import { Body, Controller, Delete, UseGuards, Get, Param, Patch, Post, Req, Res, UsePipes, ValidationPipe, HttpStatus, Query } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthGuard } from "@nestjs/passport";
 import { CreateUserDto } from './dto/createUser.dto';
 import { UserValidationPiples } from './pipes/UserValidationPiples.pipes';
 import { UsersService } from './users.service';
 import { VerifyUserPhoneDto } from './dto/verifyUserPhoneDto.dto';
+import { EmailVerificationDto } from './dto/emailVerification.dto';
 @Controller('api/users')
 export class UsersController {
     constructor(private usersService: UsersService) { }
@@ -19,6 +20,11 @@ export class UsersController {
     @UsePipes(ValidationPipe)
     loginUserWithEmail(@Body() createUserDto: CreateUserDto, @Req() req, @Res() res: Response) {
         return this.usersService.loginUserWithEmail(createUserDto, res);
+    }
+
+    @Get('/auth/verify/email')
+    verifyUserEmail(@Query() emailVerificationDto: EmailVerificationDto, @Res() res: Response) {
+        return this.usersService.emailVerification(emailVerificationDto, res);
     }
 
     @Get('/auth/google')

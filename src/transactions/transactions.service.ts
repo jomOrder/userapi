@@ -35,13 +35,12 @@ export class TransactionsService {
         const { userID } = req.decoded;
         try {
 
-            // const user = await this.userModel.findOne({ _id: userID });
-            // console.log(user)
+            const user = await this.userModel.findOne({ _id: userID });
 
-            sendTransactionEmail("morymano2014@gmail.com", createTransactionDto)
-            // createTransactionDto.userID = userID;
-            // const transaction = new this.transactionModel(createTransactionDto);
-            // transaction.save();
+            if (user.email) sendTransactionEmail(user.email, createTransactionDto)
+            createTransactionDto.userID = userID;
+            const transaction = new this.transactionModel(createTransactionDto);
+            transaction.save();
 
             return res.status(HttpStatus.CREATED).send({ code: 9, message: 'Transaction Created' });
 
