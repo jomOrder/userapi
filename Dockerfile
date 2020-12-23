@@ -7,9 +7,10 @@ COPY package.json /usr/src/app
 COPY package-lock.json /usr/src/app
 
 RUN npm install
+
 COPY . /usr/src/app
 RUN npm run build
-
-EXPOSE 80 443 3000 8080
+RUN ls
+EXPOSE 80
 
 CMD ["npm", "run", "start:prod"]
