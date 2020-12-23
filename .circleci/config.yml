@@ -1,7 +1,37 @@
-version: 2.1
-orbs:
-  node: circleci/node@3.0.0
+version: 2
+jobs:
+  deploy:
+    docker:
+      - image: circleci/python:2.7
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: Install awscli
+          command: |
+            sudo pip install awsebcli --upgrade
+      - run:
+          name: Create AWS credentials manually
+          command: |
+            mkdir ~/.aws
+            touch ~/.aws/config
+            chmod 600 ~/.aws/config
+            echo "[profile eb-cli]" > ~/.aws/config
+            echo "aws_access_key_id=$AWS_ACCESS_KEY_ID" >> ~/.aws/config
+            echo "aws_secret_access_key=$AWS_SECRET_ACCESS_KEY" >> ~/.aws/config
+      - run:
+          name: Deploy to EB if branch is Master
+          command: |
+            eb use Userapi-env --profile eb-cli
+            eb deploy -v --staged --profile eb-cli
+
 workflows:
-  node-tests:
+  version: 2
+  build-deploy:
     jobs:
-      - node/test
+      - deploy:
+          filters:
+            branches:
+              only:
+                - master
+
