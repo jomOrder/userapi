@@ -1,0 +1,18 @@
+branch-defaults:
+  USER-9:
+    environment: Userapi-env
+    group_suffix: null
+global:
+  application_name: userapi
+  branch: null
+  default_ec2_keyname: jomapi-core
+  default_platform: Docker running on 64bit Amazon Linux 2
+  default_region: ap-southeast-1
+  include_git_submodules: true
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: eb-cli
+  repository: null
+  sc: git
+  workspace_type: Application
