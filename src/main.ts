@@ -10,6 +10,6 @@ async function bootstrap() {
   app.use(helmet());
   app.enableCors();
   app.useGlobalFilters(new NotFoundExceptionFilter());
-  await app.listen(process.env.PROD_PORT);
+  await app.listen(80);
 }
 bootstrap();
