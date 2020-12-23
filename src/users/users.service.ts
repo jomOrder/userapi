@@ -19,7 +19,7 @@ import { sendUserEmailVerification } from 'src/service/mailgun.service';
 import { sendVerificationSMS } from 'src/service/smsBulk.service';
 
 import { EmailVerificationDto } from './dto/emailVerification.dto';
-const client = redis.createClient({ port: 6379, host: process.env.PROD_REDIS });
+const client = redis.createClient({ port: 6379, host: "redis-core.jomorder.com.my" });
 const getAsync = promisify(client.get).bind(client);
 const emailValidator = new EmailValidator();
 
