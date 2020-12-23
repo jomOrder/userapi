@@ -16,15 +16,18 @@ import { VerifyUserPhoneDto } from './dto/verifyUserPhoneDto.dto';
 import { promisify } from 'util';
 import { Response } from 'express';
 import { sendUserEmailVerification } from 'src/service/mailgun.service';
+import { sendVerificationSMS } from 'src/service/smsBulk.service';
+
 import { EmailVerificationDto } from './dto/emailVerification.dto';
-const client = redis.createClient({ port: 6379, host: "127.0.0.1" });
+const client = redis.createClient({ port: 6379, host: process.env.PROD_REDIS });
 const getAsync = promisify(client.get).bind(client);
 const emailValidator = new EmailValidator();
-const sharedConfig = {
-    getEvents: false,
-    isWorker: false,
-    redis: redis.createClient({ port: 6379, host: "127.0.0.1" }),
-};
+
+// const sharedConfig = {
+//     getEvents: false,
+//     isWorker: false,
+//     redis: redis.createClient({ port: 6379, host: "127.0.0.1" }),
+// };
 
 export interface User {
     email: string;
@@ -91,7 +94,7 @@ export class UsersService {
             });
 
             // Send an emailVerification
-            let auth_link = `${process.env.STAG_URI}/verify/email?authorization=${token}&email=${email}`
+            let auth_link = `${process.env.PROD_URI}/verify/email?authorization=${token}&email=${email}`
 
             sendUserEmailVerification(email, auth_link)
 
@@ -303,12 +306,13 @@ export class UsersService {
                 return res.status(HttpStatus.FOUND).send({
                     code: 29,
                     token,
-                    message: 'User Registered and Verified'
+                    message: 'User Sign In and Verified'
                 });
             }
 
 
             if (findUser && !findUser.isVerified) {
+                sendVerificationSMS(phoneNumber, code);
                 client.set(phoneNumber, code);
                 client.expire(phoneNumber, 180);
 
@@ -326,7 +330,7 @@ export class UsersService {
 
             user.save();
             // send SMS OTP Code;
-
+            sendVerificationSMS(phoneNumber, code);
             client.set(phoneNumber, code);
             client.expire(phoneNumber, 180);
             return res.status(HttpStatus.CREATED).send({

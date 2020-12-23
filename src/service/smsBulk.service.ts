@@ -7,7 +7,7 @@ API = axios.create({
     baseURL: url,
 });
 
-const sendVerificationSMS = async (mobile, code) => {
+export const sendVerificationSMS = async (mobile, code) => {
     try {
 
         const result = await API.get(`/v1.4?user=projexelplaystore@gmail.com&pass=Suren3117&type=0&to=${mobile}&from=JomOrder&text=JomOrder: Your Verification Code ${code}&servid=Bulk360`)
@@ -16,8 +16,4 @@ const sendVerificationSMS = async (mobile, code) => {
     } catch (e) {
         console.error(e);
     }
-}
-
-export default {
-    sendVerificationSMS,
 }
