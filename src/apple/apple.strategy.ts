@@ -8,7 +8,7 @@ export class AppleStrategy extends PassportStrategy(Strategy, "apple") {
   constructor() {
     super({
       clientID: "",
-      callbackURL: "http://localhost:3000/users/auth/apple/redirect",
+      callbackURL: `${process.env.PROD_URI}/apple/redirect`,
       scope: "email",
       profileFields: ["emails", "name", "photos"],
     });
