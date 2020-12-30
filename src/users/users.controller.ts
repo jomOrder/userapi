@@ -6,6 +6,7 @@ import { UserValidationPiples } from './pipes/UserValidationPiples.pipes';
 import { UsersService } from './users.service';
 import { VerifyUserPhoneDto } from './dto/verifyUserPhoneDto.dto';
 import { EmailVerificationDto } from './dto/emailVerification.dto';
+import { parse } from 'path';
 @Controller('api/users')
 export class UsersController {
     constructor(private usersService: UsersService) { }
@@ -54,7 +55,8 @@ export class UsersController {
     @Post("/auth/apple/redirect")
     // @UseGuards(AuthGuard("apple"))
     async appleLoginRedirect(@Req() req: Request, @Res() res: Response): Promise<any> {
-        return res.send(JSON.stringify(req));
+        let data = JSON.stringify(req)
+        // return res.send({ data: req.decodedIdToken })
 
         // return {
         //     data2: req.user,

@@ -53,7 +53,7 @@ export class UsersService {
             const { userID } = req.decoded;
 
             return this.userModel.findOne({ _id: userID }).select(["email", "name"]);
-            
+
         } catch (e) {
             winston.error(e.message);
             throw new NotFoundException('Users not found');
@@ -255,7 +255,7 @@ export class UsersService {
 
         try {
 
-            const findUser = await this.userModel.findOne({ email }).select({ email: 1, accessToken: 1 })
+            const findUser = await this.userModel.findOne({ email }).select(["email", "accessToken"])
             if (findUser) {
                 if (findUser.accessToken) return res.status(HttpStatus.OK).send({ message: 'User exist with facebook account. please try to signin with facebook', code: 40 });
 
