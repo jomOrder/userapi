@@ -34,6 +34,8 @@ async function bootstrap() {
     }
     cb(null, decodedIdToken, user);
   }));
+  // app.use("/auth/google").get(
+  //   passport.authenticate("apple", { scope: ["h"] }));
   app.useGlobalFilters(new NotFoundExceptionFilter());
   await app.listen(process.env.PROD_PORT);
 }
