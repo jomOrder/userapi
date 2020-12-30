@@ -2,13 +2,16 @@ import { Injectable } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { Profile } from "passport-apple";
 import * as Strategy from "passport-activedirectory";
-
 @Injectable()
 export class AppleStrategy extends PassportStrategy(Strategy, "apple") {
   constructor() {
     super({
-      clientID: "",
+      clientID: "com.jomorder.com.app",
+      teamID: "79L33V4952",
+      keyID: "U5R8YRP8S8",
       callbackURL: `${process.env.PROD_URI}/apple/redirect`,
+      privateKeyLocation: "",
+      passReqToCallback: true,
       scope: "email",
       profileFields: ["emails", "name", "photos"],
     });

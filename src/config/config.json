@@ -1,0 +1,7 @@
+{
+    "client_id": "com.jomorder.com.app",
+    "team_id": "79L33V4952",
+    "redirect_uri": "https://auth.jomorder.com.my/api/users/auth/apple/redirect",
+    "key_id": "U5R8YRP8S8",
+    "scope": "email"
+}

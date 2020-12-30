@@ -48,6 +48,7 @@
     "moment-timezone": "^0.5.32",
     "mongodb": "^3.6.3",
     "mongoose": "^5.11.7",
+    "morgan": "^1.10.0",
     "passport": "^0.4.1",
     "passport-activedirectory": "^1.0.4",
     "passport-apple": "^1.1.1",
