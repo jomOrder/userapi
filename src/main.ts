@@ -22,15 +22,17 @@ async function bootstrap() {
     privateKeyLocation: path.join(__dirname, '/config/AuthKey_U5R8YRP8S8.p8'),
     passReqToCallback: true,
   }, function (req, accessToken, refreshToken, decodedIdToken, profile, cb) {
-    console.log(req)
     console.log(profile)
-
     // Here, check if the decodedIdToken.sub exists in your database!
     // decodedIdToken should contains email too if user authorized it but will not contain the name
     // `profile` parameter is REQUIRED for the sake of passport implementation
     // it should be profile in the future but apple hasn't implemented passing data
     // in access token yet https://developer.apple.com/documentation/sign_in_with_apple/tokenresponse
-    cb(null, profile);
+    const user = {
+      profile,
+      accessToken
+    }
+    cb(null, decodedIdToken, user);
   }));
   app.useGlobalFilters(new NotFoundExceptionFilter());
   await app.listen(process.env.PROD_PORT);
