@@ -4,7 +4,7 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { MongooseModule } from '@nestjs/mongoose';
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb+srv://omar:123456Omar@stagingrep.sbvh8.mongodb.net/jom?retryWrites=true&w=majority'),
+    MongooseModule.forRoot('mongodb+srv://produser:4CFkEW5QwVgHPzWh@prodgrep-user.jgzpb.mongodb.net/jom?retryWrites=true&w=majority', { useNewUrlParser: true}),
     UsersModule,
     TransactionsModule
   ],
