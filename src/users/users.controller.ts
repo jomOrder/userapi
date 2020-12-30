@@ -10,6 +10,11 @@ import { EmailVerificationDto } from './dto/emailVerification.dto';
 export class UsersController {
     constructor(private usersService: UsersService) { }
 
+    @Get()
+    getUser(@Req() req: Request) {
+        return this.usersService.viewUser(req);
+    }
+
     @Post('/auth/signup/email')
     @UsePipes(ValidationPipe)
     registerUserWithEmail(@Body() createUserDto: CreateUserDto, @Req() req, @Res() res: Response) {
@@ -63,13 +68,13 @@ export class UsersController {
 
     @Get("/auth/facebook/redirect")
     @UseGuards(AuthGuard("facebook"))
-    async facebookLoginRedirect(@Req() req: Request, res: Response): Promise<any> {
+    async facebookLoginRedirect(@Req() req: Request, @Res() res: Response): Promise<any> {
         return this.usersService.loginWithFacebook(req, res);
     }
     
     @Post('/auth/phone')
-    phoneNumberLogin(@Body() verifyUserPhone: VerifyUserPhoneDto, @Res() res: Response) {
-        return this.usersService.signInWithPhoneNumber(verifyUserPhone, res);
+    phoneNumberLogin(@Body() verifyUserPhoneDto: VerifyUserPhoneDto, @Res() res: Response) {
+        return this.usersService.signInWithPhoneNumber(verifyUserPhoneDto, res);
     }
 
     @Post('/auth/verify/code')

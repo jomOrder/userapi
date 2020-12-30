@@ -45,22 +45,24 @@ export enum UserVerify {
 export class UsersService {
     constructor(@InjectModel("user") private userModel: Model<UserDocument>) { }
 
-    async getAllUsers() {
+    async viewUser(req) {
 
-        const userRepository = this.userModel;
         try {
 
-            return userRepository.find().sort({
-                verifiedDate: 1
-            }).select(["email", "name"])
+            //@ts-ignore
+            const { userID } = req.decoded;
 
+            return this.userModel.findOne({ _id: userID }).select(["email", "name"]);
+            
         } catch (e) {
             winston.error(e.message);
             throw new NotFoundException('Users not found');
         }
     }
     async createUserWithEmail(createUserDto: CreateUserDto, res: Response): Promise<any> {
-        const { email, password, name } = createUserDto;
+        const { email, password, name, phoneNumber } = createUserDto;
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
         try {
 
             const isEmailVaild = Validator.validate(email);
@@ -69,9 +71,8 @@ export class UsersService {
                 message: 'User Email Not Valid.'
             });
 
-            let findUser = await this.userModel.findOne({ email }).exec();
-
-            if (findUser) return res.status(HttpStatus.FOUND).send({
+            let findUser = await this.userModel.find({ $or: [{ phoneNumber }, { email }] });
+            if (findUser.length > 0) return res.status(HttpStatus.OK).send({
                 code: 11,
                 message: 'User Exist Already. Need to Sign In'
             });
@@ -81,27 +82,25 @@ export class UsersService {
 
             const user = new this.userModel({
                 name,
+                phoneNumber,
                 password: hashed,
                 email
             });
             user.save()
 
+            /* Send an emailVerification
+                let auth_link = `${process.env.PROD_URI}/verify/email?authorization=${token}&email=${email}`
+                sendUserEmailVerification(email, auth_link)
+            // end emailVerification*/
 
-            const payload = { userID: user._id };
-            const token = jwt.sign(payload, jwtSecret, {
-                expiresIn: '1h',
-                algorithm: 'HS384'
-            });
+            sendVerificationSMS(phoneNumber, code);
+            client.set(phoneNumber, code);
+            client.expire(phoneNumber, 180);
 
-            // Send an emailVerification
-            let auth_link = `${process.env.PROD_URI}/verify/email?authorization=${token}&email=${email}`
-
-            sendUserEmailVerification(email, auth_link)
-
-            // end emailVerification
             return res.status(HttpStatus.CREATED).send({
                 code: 9,
-                meessage: 'User has created',
+                otpCode: code,
+                message: 'User has created',
             });
 
         } catch (e) {
@@ -117,14 +116,14 @@ export class UsersService {
         const { email, authorization } = emailVerificationDto;
         try {
 
-            
+
             const user = await this.userModel.findOne({ email });
 
             if (user.isVerified) return res.status(HttpStatus.FORBIDDEN).send({ message: 'Expired' });
 
             await jwt.verify(authorization, jwtSecret);
 
-           
+
             user.updateOne({ isVerified: UserVerify.YES, verifiedDate: new Date() }).exec();
 
             const payload = { userID: user._id };
@@ -145,22 +144,32 @@ export class UsersService {
 
     async loginUserWithEmail(createUserDto: CreateUserDto, res: Response): Promise<any> {
         const { email, password: attemptedPassword } = createUserDto;
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
 
         try {
 
-            const user = await this.userModel.findOne({ email }).select(["email", "isVerified", "password"])
-            if (!user) return res.status(HttpStatus.NOT_FOUND).send({
+            const user = await this.userModel.findOne({ email }).select(["email", "isVerified", "phoneNumber", "password"])
+            if (!user) return res.status(HttpStatus.OK).send({
                 code: 19,
                 message: 'User Not Found'
             });
 
-            if (!user.isVerified) return res.status(HttpStatus.UNAUTHORIZED).send({
-                code: 22,
-                message: 'User UNAUTHORIZED'
-            });
+            if (!user.isVerified) {
+                const { phoneNumber } = user;
+                sendVerificationSMS(phoneNumber, code);
+                client.set(phoneNumber, code);
+                client.expire(phoneNumber, 180);
+
+                return res.status(HttpStatus.OK).send({
+                    code: 22,
+                    phoneNumber,
+                    message: 'User UNAUTHORIZED'
+                });
+
+            }
 
             const validPassword = await bcrypt.compare(attemptedPassword, user.password);
-            if (!validPassword) return res.status(HttpStatus.BAD_REQUEST).send({
+            if (!validPassword) return res.status(HttpStatus.OK).send({
                 code: 25,
                 message: 'Password Does Not Match',
             });
@@ -172,6 +181,8 @@ export class UsersService {
             });
 
             return res.status(HttpStatus.OK).send({
+                code: 29,
+                message: 'User Login Successfully',
                 token
             })
 
@@ -180,7 +191,7 @@ export class UsersService {
             throw new HttpException({
                 status: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: e.message
-            }, HttpStatus.INTERNAL_SERVER_ERROR);
+            }, HttpStatus.OK);
         }
 
     }
@@ -246,7 +257,7 @@ export class UsersService {
 
             const findUser = await this.userModel.findOne({ email }).select({ email: 1, accessToken: 1 })
             if (findUser) {
-                if (findUser.accessToken) return res.status(HttpStatus.BAD_REQUEST).send({ message: 'User exist with facebook account. please try to signin with facebook', code: 40 });
+                if (findUser.accessToken) return res.status(HttpStatus.OK).send({ message: 'User exist with facebook account. please try to signin with facebook', code: 40 });
 
                 payload = { userID: findUser._id };
                 token = jwt.sign(payload, jwtSecret, {
@@ -285,12 +296,12 @@ export class UsersService {
             throw new HttpException({
                 status: HttpStatus.INTERNAL_SERVER_ERROR,
                 message: e.message
-            }, HttpStatus.INTERNAL_SERVER_ERROR);
+            }, HttpStatus.OK);
         }
 
     }
 
-    async signInWithPhoneNumber(verifyUserPhoneDto: VerifyUserPhoneDto, res: Response): Promise<any> {
+    async signInWithPhoneNumber(verifyUserPhoneDto, res: Response): Promise<any> {
         const { phoneNumber } = verifyUserPhoneDto;
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         try {
@@ -303,7 +314,7 @@ export class UsersService {
                     expiresIn: '1h',
                     algorithm: 'HS384'
                 });
-                return res.status(HttpStatus.FOUND).send({
+                return res.status(HttpStatus.OK).send({
                     code: 29,
                     token,
                     message: 'User Sign In and Verified'
@@ -317,9 +328,9 @@ export class UsersService {
                 client.expire(phoneNumber, 180);
 
 
-                return res.status(HttpStatus.FOUND).send({
+                return res.status(HttpStatus.OK).send({
                     code: 30,
-                    otp: code,
+                    otpCode: code,
                     message: 'User Registered But Not Verified'
                 });
             }
@@ -341,13 +352,12 @@ export class UsersService {
             // End Send SMS OTP Code;
 
         } catch (e) {
-            winston.error(e.meesage);
+            winston.error(e.message);
         }
     }
 
     async verifyOTPCode(verifyUserPhone: VerifyUserPhoneDto, res: Response): Promise<any> {
         const { phoneNumber, code } = verifyUserPhone;
-        const userRepository = await this.userModel;
 
         try {
 
@@ -357,8 +367,8 @@ export class UsersService {
                 code: 21,
                 message: 'Code Expired. Please Request again'
             });
-            if (result != code) return res.status(HttpStatus.BAD_REQUEST).send({ code: 20, message: 'Code is not valid' });
-            const user = userRepository.findOne({ phoneNumber })
+            if (result != code) return res.status(HttpStatus.OK).send({ code: 20, message: 'Code is not valid' });
+            const user = await this.userModel.findOne({ phoneNumber })
             if (!user)
                 return {
                     code: 19,
@@ -367,7 +377,13 @@ export class UsersService {
 
             user.updateOne({ isVerified: UserVerify.YES, verifiedDate: new Date() }).exec();
 
-            return res.status(HttpStatus.OK).send({ code: 29, message: 'User has verified successfully' });
+            const payload = { userID: user._id };
+            const token = jwt.sign(payload, jwtSecret, {
+                expiresIn: '1h',
+                algorithm: 'HS384'
+            });
+
+            return res.status(HttpStatus.OK).send({ code: 29, token, message: 'User has verified successfully' });
 
         } catch (e) {
             throw new HttpException({

@@ -54,6 +54,7 @@ export class User {
         const isValidated = await bcrypt.compare(password, this.password);
         return isValidated;
     }
+    
 }
 
 

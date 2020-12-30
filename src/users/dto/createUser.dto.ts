@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsIn, IsMobilePhone, IsNotEmpty, IsOptional } from 'class-validator';
 import { UserVerify } from '../users.service';
 export class CreateUserDto {
 
@@ -18,6 +18,7 @@ export class CreateUserDto {
 
     @IsOptional()
     @IsNotEmpty()
+    @IsMobilePhone()
     phoneNumber: string
 
     @IsOptional()

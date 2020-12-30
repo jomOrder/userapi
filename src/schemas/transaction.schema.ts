@@ -31,6 +31,12 @@ export class Transaction {
   transactionID: string
 
   @Prop({ required: true })
+  name: string
+
+  @Prop({ required: true })
+  tableNo: string
+
+  @Prop({ required: true })
   status: TransactionStatus;
 
   @Prop({ required: true })
