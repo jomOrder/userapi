@@ -51,12 +51,13 @@ export class UsersController {
         return HttpStatus.OK;
     }
 
-    @Get("/auth/apple/redirect")
+    @Post("/auth/apple/redirect")
     @UseGuards(AuthGuard("apple"))
-    async appleLoginRedirect(@Req() req: Request): Promise<any> {
+    async appleLoginRedirect(@Req() req: Request, @Res() res: Response): Promise<any> {
         return {
+            data2: req.user,
             statusCode: HttpStatus.OK,
-            data: req.user,
+            data: res,
         };
     }
 
