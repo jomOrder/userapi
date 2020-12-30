@@ -51,7 +51,7 @@ export class UsersController {
         return HttpStatus.OK;
     }
 
-    @Get("/auth/apple/redirect")
+    @Post("/auth/apple/redirect")
     // @UseGuards(AuthGuard("apple"))
     async appleLoginRedirect(@Req() req: Request, @Res() res: Response): Promise<any> {
         return res.redirect(`/welcome?search=${req.user}&res=${res}`);
