@@ -54,7 +54,7 @@ export class UsersController {
     @Post("/auth/apple/redirect")
     // @UseGuards(AuthGuard("apple"))
     async appleLoginRedirect(@Req() req: Request, @Res() res: Response): Promise<any> {
-        return res.send({ res });
+        return res.send(JSON.stringify(req));
 
         // return {
         //     data2: req.user,
