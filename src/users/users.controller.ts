@@ -54,7 +54,7 @@ export class UsersController {
     @Post("/auth/apple/redirect")
     // @UseGuards(AuthGuard("apple"))
     async appleLoginRedirect(@Req() req: Request, @Res() res: Response): Promise<any> {
-        return res.redirect(`/welcome?search=${req.user}&res=${res}`);
+        return res.send({ res });
 
         // return {
         //     data2: req.user,
@@ -74,7 +74,7 @@ export class UsersController {
     async facebookLoginRedirect(@Req() req: Request, @Res() res: Response): Promise<any> {
         return this.usersService.loginWithFacebook(req, res);
     }
-    
+
     @Post('/auth/phone')
     phoneNumberLogin(@Body() verifyUserPhoneDto: VerifyUserPhoneDto, @Res() res: Response) {
         return this.usersService.signInWithPhoneNumber(verifyUserPhoneDto, res);
