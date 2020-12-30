@@ -1,5 +1,5 @@
 {
-    "client_id": "com.jomorder.com.app",
+    "client_id": "com.jomorder.com.meuapp",
     "team_id": "79L33V4952",
     "redirect_uri": "https://auth.jomorder.com.my/api/users/auth/apple/redirect",
     "key_id": "U5R8YRP8S8",
