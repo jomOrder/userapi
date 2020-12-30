@@ -12,6 +12,6 @@ async function bootstrap() {
   app.use(morgan('dev'));
   app.enableCors();
   app.useGlobalFilters(new NotFoundExceptionFilter());
-  await app.listen(process.env.STAG_PORT);
+  await app.listen(process.env.PROD_PORT);
 }
 bootstrap();
