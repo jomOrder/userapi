@@ -132,7 +132,7 @@ export class UsersService {
                 algorithm: 'HS384'
             });
 
-            return res.setTimeout(400).redirect(301, `${process.env.STAG_APP_URL}/store?accessToken=${accessToken}`);
+            return res.setTimeout(400).redirect(301, `${process.env.PROD_APP_URL}/store?accessToken=${accessToken}`);
 
         } catch (e) {
             winston.error(e.message);
@@ -213,7 +213,7 @@ export class UsersService {
                     algorithm: 'HS384'
                 });
 
-                return res.redirect(301, `${process.env.STAG_APP_URL}/store?accessToken=${token}`);
+                return res.redirect(301, `${process.env.PROD_APP_URL}/store?accessToken=${token}`);
             }
             const user = new this.userModel({
                 name: {
@@ -237,7 +237,7 @@ export class UsersService {
                 algorithm: 'HS384'
             });
 
-            return res.redirect(301, `${process.env.STAG_APP_URL}/store?accessToken=${token}`);
+            return res.redirect(301, `${process.env.PROD_APP_URL}/store?accessToken=${token}`);
 
         } catch (e) {
             winston.error(e.message);
@@ -265,7 +265,7 @@ export class UsersService {
                     algorithm: 'HS384'
                 });
 
-                return res.redirect(301, `${process.env.STAG_APP_URL}/store?accessToken=${token}`);
+                return res.redirect(301, `${process.env.PROD_APP_URL}/store?accessToken=${token}`);
             }
 
             const user = new this.userModel({
@@ -289,7 +289,7 @@ export class UsersService {
                 algorithm: 'HS384'
             });
 
-            return res.redirect(301, `${process.env.STAG_APP_URL}/store?accessToken=${token}`);
+            return res.redirect(301, `${process.env.PROD_APP_URL}/store?accessToken=${token}`);
 
         } catch (e) {
             winston.error(e);
