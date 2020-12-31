@@ -10,7 +10,7 @@ API = axios.create({
 export const sendVerificationSMS = async (mobile, code) => {
     try {
 
-        const result = await API.get(`/v1.4?user=projexelplaystore@gmail.com&pass=Suren3117&type=0&to=${mobile}&from=JomOrder&text=JomOrder: Your Verification Code ${code}&servid=Bulk360`)
+        const result = await API.get(`/v1.4?user=projexelplaystore@gmail.com&pass=Suren3117&type=0&to=${mobile}&from=JomOrder&text=JomOrder: Your Verification Code is: ${code}&servid=Bulk360`)
         console.log(result.data);
 
     } catch (e) {
