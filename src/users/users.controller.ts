@@ -82,6 +82,11 @@ export class UsersController {
         return this.usersService.signInWithPhoneNumber(verifyUserPhoneDto, res);
     }
 
+    @Post('/auth/phone/complete-profile')
+    completeUserProfileLogin(@Body() createUserDto: CreateUserDto, @Query() query: Object, @Res() res: Response) {
+        return this.usersService.completeUserProfile(createUserDto, query, res);
+    }
+
     @Post('/auth/verify/code')
     verifyUserPhone(@Body() verifyUserPhone: VerifyUserPhoneDto, @Res() res: Response) {
         return this.usersService.verifyOTPCode(verifyUserPhone, res);

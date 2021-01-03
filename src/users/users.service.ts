@@ -46,13 +46,11 @@ export class UsersService {
     constructor(@InjectModel("user") private userModel: Model<UserDocument>) { }
 
     async viewUser(req) {
-
         try {
 
             //@ts-ignore
             const { userID } = req.decoded;
-
-            return this.userModel.findOne({ _id: userID }).select(["email", "name"]);
+            return this.userModel.findOne({ _id: userID }).select(["email", "name", "phoneNumber"]);
 
         } catch (e) {
             winston.error(e.message);
@@ -307,7 +305,8 @@ export class UsersService {
         try {
 
             const findUser = await this.userModel.findOne({ phoneNumber })
-            if (findUser && findUser.isVerified) {
+
+            if (findUser && (findUser.isVerified && findUser.email)) {
 
                 const payload = { userID: findUser._id };
                 const token = jwt.sign(payload, jwtSecret, {
@@ -321,7 +320,6 @@ export class UsersService {
                 });
             }
 
-
             if (findUser && !findUser.isVerified) {
                 sendVerificationSMS(phoneNumber, code);
                 client.set(phoneNumber, code);
@@ -334,6 +332,11 @@ export class UsersService {
                     message: 'User Registered But Not Verified'
                 });
             }
+
+            if (findUser && !findUser.email) return res.status(HttpStatus.OK).send({
+                code: 24,
+                message: 'User Profile is not complete'
+            });
 
             const user = new this.userModel({
                 phoneNumber
@@ -353,6 +356,47 @@ export class UsersService {
 
         } catch (e) {
             winston.error(e.message);
+        }
+    }
+
+
+    async completeUserProfile(createUserDto: CreateUserDto, query, res: Response): Promise<any> {
+        const { name, email } = createUserDto;
+        const { phoneNumber } = query
+
+        try {
+
+            console.log("email: ", email)
+            const userEmail = await this.userModel.findOne({ email })
+            console.log(userEmail)
+            if (userEmail) return res.status(HttpStatus.OK).send({
+                code: 10,
+                message: 'Email Already Exist.'
+            });
+
+            const user = await this.userModel.findOne({ phoneNumber })
+            if (user && user.isVerified) {
+                user.updateOne({ email, name }).exec();
+
+                const payload = { userID: user._id };
+                const token = jwt.sign(payload, jwtSecret, {
+                    expiresIn: '1h',
+                    algorithm: 'HS384'
+                });
+
+                return res.status(HttpStatus.OK).send({ code: 9, token, message: 'User has registered successfully' });
+            } else return res.status(HttpStatus.OK).send({ code: 30, message: 'User not verified' });
+
+
+
+
+
+        } catch (e) {
+            winston.error(e);
+            throw new HttpException({
+                status: HttpStatus.INTERNAL_SERVER_ERROR,
+                message: e.message
+            }, HttpStatus.OK);
         }
     }
 
@@ -377,13 +421,7 @@ export class UsersService {
 
             user.updateOne({ isVerified: UserVerify.YES, verifiedDate: new Date() }).exec();
 
-            const payload = { userID: user._id };
-            const token = jwt.sign(payload, jwtSecret, {
-                expiresIn: '1h',
-                algorithm: 'HS384'
-            });
-
-            return res.status(HttpStatus.OK).send({ code: 29, token, message: 'User has verified successfully' });
+            return res.status(HttpStatus.OK).send({ code: 29, message: 'User has verified successfully' });
 
         } catch (e) {
             throw new HttpException({
@@ -417,13 +455,15 @@ export class UsersService {
  * Message Code
  * ---------------
  *
- * User Created     => 9
- * User Not Found   => 19
- * UNAUTHORIZED     => 22
- * Expired          => 21
- * Not Vaild        => 20
- * Verified         => 29
- * Not Verified     => 30
- * Bad Request      => 40
+ * User Created                 => 9
+ * User Created                 => 10
+ * User Not Found               => 19
+ * UNAUTHORIZED                 => 22
+ * User Profile not complete    => 24
+ * Expired                      => 21
+ * Not Vaild                    => 20
+ * Verified                     => 29
+ * Not Verified                 => 30
+ * Bad Request                  => 40
 
  */
