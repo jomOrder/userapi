@@ -378,7 +378,7 @@ export class UsersService {
             const user = await this.userModel.findOne({ phoneNumber })
             if (user && user.isVerified) {
 
-                user.updateOne({ email, name, astLoginDate: new Date() }).exec();
+                user.updateOne({ email, name, lastLoginDate: new Date() }).exec();
 
                 const payload = { userID: user._id };
                 const token = jwt.sign(payload, jwtSecret, {
