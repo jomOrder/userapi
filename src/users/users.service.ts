@@ -308,11 +308,14 @@ export class UsersService {
 
             if (findUser && (findUser.isVerified && findUser.email)) {
 
+                findUser.updateOne({ lastLoginDate: new Date() }).exec();
+
                 const payload = { userID: findUser._id };
                 const token = jwt.sign(payload, jwtSecret, {
                     expiresIn: '1h',
                     algorithm: 'HS384'
                 });
+
                 return res.status(HttpStatus.OK).send({
                     code: 29,
                     token,
@@ -366,9 +369,7 @@ export class UsersService {
 
         try {
 
-            console.log("email: ", email)
             const userEmail = await this.userModel.findOne({ email })
-            console.log(userEmail)
             if (userEmail) return res.status(HttpStatus.OK).send({
                 code: 10,
                 message: 'Email Already Exist.'
@@ -376,7 +377,8 @@ export class UsersService {
 
             const user = await this.userModel.findOne({ phoneNumber })
             if (user && user.isVerified) {
-                user.updateOne({ email, name }).exec();
+
+                user.updateOne({ email, name, astLoginDate: new Date() }).exec();
 
                 const payload = { userID: user._id };
                 const token = jwt.sign(payload, jwtSecret, {
@@ -386,10 +388,6 @@ export class UsersService {
 
                 return res.status(HttpStatus.OK).send({ code: 9, token, message: 'User has registered successfully' });
             } else return res.status(HttpStatus.OK).send({ code: 30, message: 'User not verified' });
-
-
-
-
 
         } catch (e) {
             winston.error(e);
