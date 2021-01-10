@@ -60,7 +60,7 @@ export class Transaction {
   @Prop()
   notes: string
 
-  @Prop({ default: Date.now() })
+  @Prop({ default: new Date() })
   createDate: Date
 
   @Prop({ nullable: true })
@@ -73,6 +73,7 @@ export class Transaction {
   orders: [{
     name: string,
     price: string,
+    quantity: number,
     addOns: [
       {
         name: string,
