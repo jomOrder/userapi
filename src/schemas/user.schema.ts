@@ -38,9 +38,12 @@ export class User {
     accessToken: string;
 
     @Prop({ nullable: true })
+    lastLoginDate: Date;
+
+    @Prop({ nullable: true })
     verifiedDate: Date;
 
-    @Prop({ default: Date.now() })
+    @Prop({ default: new Date() })
     createDate: Date
 
     @Prop({ nullable: true })
